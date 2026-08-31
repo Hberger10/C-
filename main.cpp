@@ -2,7 +2,8 @@
 #include <cstdlib>
 #include <ctime>
 #include <string.h>
-
+#include <cstring>
+#include <cctype>
 
 
 struct Aluno{
@@ -23,12 +24,36 @@ struct Alunos{
     int quantidade;
 };
 
+Alunos tabelas [100];
+
+int funcaoHash(const char* cpf) {
+    int len = strlen(cpf);
+    int d1 = -1, d2 = -1;
+
+    
+    for (int i = len - 1; i >= 0; i--) {
+        if (isdigit(cpf[i])) {
+            if (d2 == -1) {
+                d2 = cpf[i] - '0'; 
+            } else if (d1 == -1) {
+                d1 = cpf[i] - '0'; 
+                break;
+            }
+        }
+    } 
+    if (d1 == -1 || d2 == -1) return 0;
+
+    return (d1 * 10) + d2; 
+}
+
 Alunos a;
 
 void inicializa(){
-    a.inicio = NULL;
-    a.fim = NULL;
-    a.quantidade = 0;
+    for (int i=0;i<100;i++){
+        tabelas[i].inicio = NULL;
+        tabelas[i].fim = NULL;
+        tabelas[i].quantidade = 0;
+    } 
 }
 
 bool existeDuplicado(const char* matricula, const char* cpf) {
