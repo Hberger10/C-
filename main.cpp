@@ -4,6 +4,7 @@
 #include <string.h>
 #include <cstring>
 #include <cctype>
+#include <chrono>
 
 
 struct Aluno{
@@ -46,7 +47,7 @@ int funcaoHash(const char* cpf) {
     return (d1 * 10) + d2; 
 }
 
-Alunos a;
+
 
 void inicializa(){
     for (int i=0;i<100;i++){
@@ -56,16 +57,17 @@ void inicializa(){
     } 
 }
 
-bool existeDuplicado(const char* matricula, const char* cpf) {
-    Aluno* atual = a.inicio;
-    while (atual != NULL) {
-        if (strcmp(atual->matricula, matricula) == 0 || 
-            strcmp(atual->cpf, cpf) == 0) {
+bool existeDuplicado( int indice ,const char* cpf) { // no indice eu não utilizo ponteiro pois quero apenas ler.´porém no cpf precisa pois vetor de char não é copiado o que viaja é o endereço 
+    Aluno* atual =  tabelas[indice].inicio;
+    while (atual != NULL){
+        if (strcmp(atual->cpf,cpf)==0){
             return true;
         }
-        atual = atual->prox;
+        atual= atual->prox;
+        
     }
     return false;
+    
 }
 
 
@@ -73,22 +75,23 @@ bool existeDuplicado(const char* matricula, const char* cpf) {
 
 void adicionarAluno(Aluno* novo) {
 
-    if (existeDuplicado(novo->matricula, novo->cpf)) {
-        printf("Erro: matricula ou CPF ja cadastrados\n");
-               
+    int indice = funcaoHash(novo->cpf);
+    if(existeDuplicado(indice,novo->cpf)){
         delete novo;
         return;
     }
 
-    Aluno* atual = a.inicio;
+    
+
+    Aluno* atual = tabelas[indice].inicio;
     Aluno* anterior = NULL;
 
-    if (a.inicio == NULL) {
+    if (atual == NULL) {
 
         novo->ante = NULL;
         novo->prox = NULL;
-        a.inicio = novo;
-        a.fim = novo;
+        tabelas[indice].inicio = novo;
+        tabelas[indice].fim = novo;
     } else {
         
         while (atual != NULL && strcmp(novo->nome, atual->nome) > 0) {
@@ -98,16 +101,16 @@ void adicionarAluno(Aluno* novo) {
 
         if (anterior == NULL) {
             
-            novo->prox = a.inicio;
+            novo->prox = atual;
             novo->ante = NULL;
-            a.inicio->ante = novo;
-            a.inicio = novo;
+            atual->ante = novo;
+            tabelas[indice].inicio = novo;
         } else if (atual == NULL) {
             
             novo->prox = NULL;
             novo->ante = anterior;
             anterior->prox = novo;
-            a.fim = novo;
+            tabelas[indice].fim = novo;
         } else {
             
             novo->prox = atual;
@@ -117,7 +120,7 @@ void adicionarAluno(Aluno* novo) {
         }
     }
 
-    a.quantidade++;
+    tabelas[indice].quantidade++;
 }
 
 
@@ -153,10 +156,14 @@ void lerArquivoCSV(const char* nomeArquivo) {
 
 void exibirAlunos() {
     printf("\n=== LISTA DE ALUNOS ===\n");
-    Aluno* atual = a.inicio;
-    int contador = 1;
     
-    while (atual != NULL) {
+    int contador = 1;
+    int i=0;
+   
+
+    for(i=0;i<100;i++){
+        Aluno* atual = tabelas[i].inicio;
+        while (atual != NULL) {
         printf("Aluno %d:\n", contador);
         printf("  Matricula: %s\n", atual->matricula);
         printf("  CPF: %s\n", atual->cpf);
@@ -170,7 +177,12 @@ void exibirAlunos() {
         atual = atual->prox;
         contador++;
     }
-    printf("Total: %d alunos\n\n", a.quantidade);
+        
+
+    }
+    
+    
+    printf("Total: %d alunos\n\n", contador -1);
 }
 
 
@@ -181,19 +193,24 @@ void salvarCSV(const char* nomeArquivo) {
         return;
     }
 
-  
+    
     fprintf(arquivo, "matricula,cpf,nome,nota,idade,curso,cidade\n");
 
-    Aluno* atual = a.inicio;
-    while (atual != NULL) {
-        fprintf(arquivo, "%s,%s,%s,%.2f,%d,%s,%s\n",
-                atual->matricula, atual->cpf, atual->nome,
-                atual->nota, atual->idade, atual->curso, atual->cidade);
-        atual = atual->prox;
+    int salvos = 0;   
+
+    for (int i = 0; i < 100; i++) {                 
+        Aluno* atual = tabelas[i].inicio;            
+        while (atual != NULL) {                      
+            fprintf(arquivo, "%s,%s,%s,%.2f,%d,%s,%s\n",
+                    atual->matricula, atual->cpf, atual->nome,
+                    atual->nota, atual->idade, atual->curso, atual->cidade);
+            atual = atual->prox;                    
+            salvos++;
+        }
     }
 
-    fclose(arquivo);
-    printf("Arquivo %s atualizado. %d alunos salvos.\n", nomeArquivo, a.quantidade);
+    fclose(arquivo);   
+    printf("Arquivo %s atualizado. %d alunos salvos.\n", nomeArquivo, salvos);
 }
 
 void lerLinha(char* destino, int tamanho) {
@@ -258,20 +275,25 @@ void exibirDadosAluno(Aluno* al) {
 
 
 void removerAluno(Aluno* alvo) {
+    
+    int indice = funcaoHash(alvo->cpf);
+
+    
+
     if (alvo->ante != NULL) {
         alvo->ante->prox = alvo->prox;
     } else {
-        a.inicio = alvo->prox;
+        tabelas[indice].inicio = alvo->prox;
     }
 
     if (alvo->prox != NULL) {
         alvo->prox->ante = alvo->ante;
     } else {
-        a.fim = alvo->ante;
+        tabelas[indice].fim = alvo->ante;
     }
 
     delete alvo;
-    a.quantidade--;
+    tabelas[indice].quantidade--;
     printf("Aluno removido com sucesso!\n");
 
     salvarCSV("aluno.csv");
@@ -285,9 +307,14 @@ void buscarPorMatricula() {
     printf("Digite a matricula a buscar: ");
     lerLinha(matriculaBusca, sizeof(matriculaBusca));
 
-    Aluno* atual = a.inicio;
-    while (atual != NULL && strcmp(atual->matricula, matriculaBusca) != 0) {
-        atual = atual->prox;
+    
+    Aluno* atual = tabelas[0].inicio;
+    for (int i = 0; i < 100; i++) {
+        atual = tabelas[i].inicio;
+        while (atual != NULL && strcmp(atual->matricula, matriculaBusca) != 0) {
+            atual = atual->prox;
+        }
+        if (atual != NULL) break;  
     }
 
     if (atual == NULL) {
@@ -314,7 +341,10 @@ void buscarPorCpf() {
     printf("Digite o cpf a buscar: ");
     lerLinha(cpfBusca, sizeof(cpfBusca));
 
-    Aluno* atual = a.inicio;
+     int indice = funcaoHash(cpfBusca);
+
+
+    Aluno* atual = tabelas[indice].inicio;
     while (atual != NULL && strcmp(atual->cpf, cpfBusca) != 0) {
         atual = atual->prox;
     }
@@ -338,14 +368,14 @@ void buscarPorCpf() {
 int main(){
     inicializa();
     printf("SISTEMA DE LEITURA DE ALUNOS CSV \n\n");
-    
-    time_t inicio, fim;
-    inicio = time(NULL);
-    lerArquivoCSV("aluno.csv");
-    fim = time(NULL);
-    
-    double tempo = difftime(fim, inicio);
-    printf("Tempo de leitura: %.2f segundos\n", tempo);
+
+    auto t0 = std::chrono::steady_clock::now();
+    lerArquivoCSV("alunoss.csv");
+    auto t1 = std::chrono::steady_clock::now();
+
+    long long us = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+    printf("Tempo de leitura: %lld microssegundos (%.3f ms)\n", us, us / 1000.0);
+
     int opcao;
     do {
         printf("\n=== MENU ===\n");
