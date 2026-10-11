@@ -25,7 +25,17 @@ struct Alunos{
     int quantidade;
 };
 
-Alunos tabelas [100];
+Alunos* tabelas = NULL;
+int tamanho =0;
+int modoHash = 0;
+
+
+const char* arquivoCSV = "alunoss.csv";
+
+
+char nomesBusca[10][40];
+char matriculasBusca[10][9];
+int totalAmostras = 0;
 
 int funcaoHash(const char* cpf) {
     int len = strlen(cpf);
@@ -47,10 +57,90 @@ int funcaoHash(const char* cpf) {
     return (d1 * 10) + d2; 
 }
 
+int funcaoHash2(const char* cpf){
+    int len = strlen(cpf);
+    int resultado = 0;
+    int peso = 1;
+    int pegos = 0;
+
+    for (int i = len - 1; i >= 0 && pegos < 3; i--) {
+        if (isdigit(cpf[i])) {
+            resultado += (cpf[i] - '0') * peso;
+            peso *= 10;
+            pegos++;
+        }
+    }
+    return resultado;  
+}
+int funcaoHash3(const char* cpf){
+    int len = strlen(cpf);
+    int resultado = 0;
+    int peso = 1;
+    int pegos = 0;
+
+    for (int i = len - 1; i >= 0 && pegos < 4; i--) {
+        if (isdigit(cpf[i])) {
+            resultado += (cpf[i] - '0') * peso;
+            peso *= 10;
+            pegos++;
+        }
+    }
+    return resultado;  
+}
+
+int funcaoHash4(const char* cpf){
+    int len = strlen(cpf);
+    int resultado = 0;
+    int peso = 1;
+    int pegos = 0;
+
+    for (int i = len - 1; i >= 0 && pegos < 5; i--) {
+        if (isdigit(cpf[i])) {
+            resultado += (cpf[i] - '0') * peso;
+            peso *= 10;
+            pegos++;
+        }
+    }
+    return resultado;  
+}
+
+void configurarTabela(){
+
+    
+    do {
+        printf("Escolha o hash:\n");
+        printf("1 - 100 indices\n");
+        printf("2 - 1000 indices\n");
+        printf("3 - 10000 indices\n");
+        printf("4 - 100000 indices\n");
+        printf("Escolha: ");
+        scanf("%d", &modoHash);
+    } while (modoHash < 1 || modoHash > 4);
+
+    
+    switch (modoHash){
+        case 1:
+            tamanho = 100;
+            break;
+        case 2:
+            tamanho = 1000;
+            break;
+        case 3:
+            tamanho = 10000;
+            break;
+        case 4:
+            tamanho = 100000;
+            break;
+    }
+
+    
+    tabelas = new Alunos[tamanho];
+}
+
 
 
 void inicializa(){
-    for (int i=0;i<100;i++){
+    for (int i=0;i<tamanho;i++){
         tabelas[i].inicio = NULL;
         tabelas[i].fim = NULL;
         tabelas[i].quantidade = 0;
@@ -74,8 +164,22 @@ bool existeDuplicado( int indice ,const char* cpf) { // no indice eu não utiliz
 
 
 void adicionarAluno(Aluno* novo) {
+    int indice =0;
+    if (modoHash == 1){
+        indice = funcaoHash(novo->cpf);
 
-    int indice = funcaoHash(novo->cpf);
+    } else if(modoHash == 2){
+        indice = funcaoHash2(novo->cpf);
+    } else if(modoHash == 3){
+        indice = funcaoHash3(novo->cpf);
+    } else if(modoHash == 4){
+        indice = funcaoHash4(novo->cpf);
+    }
+
+
+
+
+    
     if(existeDuplicado(indice,novo->cpf)){
         delete novo;
         return;
@@ -161,7 +265,7 @@ void exibirAlunos() {
     int i=0;
    
 
-    for(i=0;i<100;i++){
+    for(i=0;i<tamanho;i++){
         Aluno* atual = tabelas[i].inicio;
         while (atual != NULL) {
         printf("Aluno %d:\n", contador);
@@ -198,7 +302,7 @@ void salvarCSV(const char* nomeArquivo) {
 
     int salvos = 0;   
 
-    for (int i = 0; i < 100; i++) {                 
+    for (int i = 0; i < tamanho; i++) {                 
         Aluno* atual = tabelas[i].inicio;            
         while (atual != NULL) {                      
             fprintf(arquivo, "%s,%s,%s,%.2f,%d,%s,%s\n",
@@ -275,8 +379,17 @@ void exibirDadosAluno(Aluno* al) {
 
 
 void removerAluno(Aluno* alvo) {
-    
-    int indice = funcaoHash(alvo->cpf);
+    int indice =0;
+    if (modoHash == 1){
+        indice = funcaoHash(alvo->cpf);
+
+    } else if(modoHash == 2){
+        indice = funcaoHash2(alvo->cpf);
+    } else if(modoHash == 3){
+        indice = funcaoHash3(alvo->cpf);
+    } else if(modoHash == 4){
+        indice = funcaoHash4(alvo->cpf);
+    }
 
     
 
@@ -309,7 +422,7 @@ void buscarPorMatricula() {
 
     
     Aluno* atual = tabelas[0].inicio;
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < tamanho; i++) {
         atual = tabelas[i].inicio;
         while (atual != NULL && strcmp(atual->matricula, matriculaBusca) != 0) {
             atual = atual->prox;
@@ -340,8 +453,19 @@ void buscarPorCpf() {
 
     printf("Digite o cpf a buscar: ");
     lerLinha(cpfBusca, sizeof(cpfBusca));
+    int indice =0;
+    if (modoHash == 1){
+        indice = funcaoHash(cpfBusca);
 
-     int indice = funcaoHash(cpfBusca);
+    } else if(modoHash == 2){
+        indice = funcaoHash2(cpfBusca);
+    } else if(modoHash == 3){
+        indice = funcaoHash3(cpfBusca);
+    } else if(modoHash == 4){
+        indice = funcaoHash4(cpfBusca);
+    }
+
+     
 
 
     Aluno* atual = tabelas[indice].inicio;
@@ -365,12 +489,119 @@ void buscarPorCpf() {
     }
 }
 
+// busca automatica
+Aluno* procurarPorNome(const char* nome) {
+    for (int i = 0; i < tamanho; i++) {
+        Aluno* atual = tabelas[i].inicio;
+        while (atual != NULL) {
+            if (strcmp(atual->nome, nome) == 0) {
+                return atual;
+            }
+            atual = atual->prox;
+        }
+    }
+    return NULL;
+}
+
+
+Aluno* procurarPorMatricula(const char* matricula) {
+    for (int i = 0; i < tamanho; i++) {
+        Aluno* atual = tabelas[i].inicio;
+        while (atual != NULL) {
+            if (strcmp(atual->matricula, matricula) == 0) {
+                return atual;
+            }
+            atual = atual->prox;
+        }
+    }
+    return NULL;
+}
+
+
+void carregarAmostras() {
+    totalAmostras = 0;
+
+    FILE* arquivo = fopen(arquivoCSV, "r");
+    if (arquivo == NULL) return;
+
+    char linha[300];
+
+    
+    fgets(linha, sizeof(linha), arquivo);   
+    int totalLinhas = 0;
+    while (fgets(linha, sizeof(linha), arquivo) != NULL) {
+        if (strlen(linha) >= 5) totalLinhas++;
+    }
+
+    int passo = totalLinhas / 10;           
+    if (passo < 1) passo = 1;
+
+    
+    rewind(arquivo);
+    fgets(linha, sizeof(linha), arquivo);   
+    int numeroLinha = 0;
+    while (totalAmostras < 10 && fgets(linha, sizeof(linha), arquivo) != NULL) {
+        if (strlen(linha) < 5) continue;
+
+        if (numeroLinha % passo == 0) {
+            char mat[9], cpf[15], nome[40];
+            if (sscanf(linha, "%8[^,],%14[^,],%39[^,]", mat, cpf, nome) == 3) {
+                strcpy(matriculasBusca[totalAmostras], mat);
+                strcpy(nomesBusca[totalAmostras], nome);
+                totalAmostras++;
+            }
+        }
+        numeroLinha++;
+    }
+    fclose(arquivo);
+}
+
+void buscaAutomatica() {
+    carregarAmostras();     
+
+    if (totalAmostras == 0) {
+        printf("Nao foi possivel ler as amostras de %s\n", arquivoCSV);
+        return;
+    }
+
+    printf("\n=== BUSCA AUTOMATICA (%d nomes e %d matriculas) ===\n", totalAmostras, totalAmostras);
+
+    
+    int achadosNome = 0;
+    auto t0 = std::chrono::steady_clock::now();
+    for (int i = 0; i < totalAmostras; i++) {
+        if (procurarPorNome(nomesBusca[i]) != NULL) achadosNome++;
+    }
+    auto t1 = std::chrono::steady_clock::now();
+    long long usNome = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+
+    printf("Nomes:      %d de %d achados | total %lld us | media %.1f us por busca\n",
+           achadosNome, totalAmostras, usNome, (double)usNome / totalAmostras);
+
+    
+    int achadosMat = 0;
+    auto t2 = std::chrono::steady_clock::now();
+    for (int i = 0; i < totalAmostras; i++) {
+        if (procurarPorMatricula(matriculasBusca[i]) != NULL) achadosMat++;
+    }
+    auto t3 = std::chrono::steady_clock::now();
+    long long usMat = std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
+
+    printf("Matriculas: %d de %d achadas  | total %lld us | media %.1f us por busca\n",
+           achadosMat, totalAmostras, usMat, (double)usMat / totalAmostras);
+}
+
+
+
 int main(){
+    configurarTabela();
     inicializa();
     printf("SISTEMA DE LEITURA DE ALUNOS CSV \n\n");
 
+    
+
     auto t0 = std::chrono::steady_clock::now();
-    lerArquivoCSV("alunoss.csv");
+    lerArquivoCSV(arquivoCSV);
     auto t1 = std::chrono::steady_clock::now();
 
     long long us = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
@@ -384,6 +615,7 @@ int main(){
         printf("3 - Buscar por matricula\n");
         printf("4 - Buscar por cpf\n");
         printf("5 - Salvar alteracoes no arquivo\n");
+        printf("6 - Busca automatica (10 nomes e 10 matriculas)\n");
         printf("0 - Sair\n");
         printf("Escolha: ");
         scanf("%d", &opcao);
@@ -403,6 +635,9 @@ int main(){
                 break;
             case 5:
                 salvarCSV("aluno.csv");
+                break;
+            case 6:
+                buscaAutomatica();
                 break;
             case 0:
                 salvarCSV("aluno.csv");
