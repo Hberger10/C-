@@ -1,4 +1,3 @@
-
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -27,7 +26,8 @@ struct NoAluno {
 };
 
 struct Arvore {
-    NoAluno* raiz;
+    Aluno** vetor;
+    int capacidade;
     int quantidadeElementosDeAlunos;
     int nivelMaximo;
 };
@@ -35,83 +35,75 @@ struct Arvore {
 Arvore a;
 
 void inicializa() {
-    a.raiz = NULL;
+    a.capacidade=1048576;
+    a.vetor = new Aluno*[a.capacidade]();
+    
+
     a.nivelMaximo = 0;
     a.quantidadeElementosDeAlunos = 0;
 }
 
 
-void adicionarAluno(Aluno* novo) {
-    NoAluno* no = new NoAluno;
+bool adicionarAluno(Aluno* novo) {
+    int atual = 0;
+    int nivel = 0;
 
-    no->aluno = novo;
-    no->pai = NULL;
-    no->dir = NULL;
-    no->esq = NULL;
-    no->altura = 0;
-    no->nivel = 0;
-    no->grau = 0;
+    while (atual < a.capacidade && a.vetor[atual] != NULL) {
 
-    if (a.raiz == NULL) {
-        a.raiz = no;
-        a.quantidadeElementosDeAlunos++;
-        return;
-    }
+        if (strcmp(a.vetor[atual]->nome, novo->nome) > 0) {
 
-    NoAluno* atual = a.raiz;
-    NoAluno* pai = NULL;
+            
+            if (atual > (a.capacidade - 2) / 2) {
+                return false;
+            }
 
-    while (atual != NULL) {
-        if (strcmp(atual->aluno->nome, novo->nome) > 0) {
-            pai = atual;
-            atual = atual->esq;
+            atual = 2 * atual + 1;
+
+        } else {
+
+            
+            if (atual > (a.capacidade - 3) / 2) {
+                return false;
+            }
+
+            atual = 2 * atual + 2;
         }
-        else if (strcmp(atual->aluno->nome, novo->nome) == 0) {
-            pai = atual;
-            atual = atual->dir;
-        }
-        else {
-            pai = atual;
-            atual = atual->dir;
-        }
-    }
-
-    no->pai = pai;
-
-    if (strcmp(pai->aluno->nome, novo->nome) > 0) {
-        pai->esq = no;
-    }
-    else {
-        pai->dir = no;
-    }
-
-    a.quantidadeElementosDeAlunos++;
-
-    no->nivel = pai->nivel + 1;
-
-    if (no->nivel > a.nivelMaximo) {
-        a.nivelMaximo = no->nivel;
+        nivel++;
     }
 
     
-    pai->grau++;
+
+    if (atual < a.capacidade) {
+        a.vetor[atual] = novo;
+        a.quantidadeElementosDeAlunos++;
+
+        if (nivel > a.nivelMaximo) {
+        a.nivelMaximo = nivel;
+        }
+        return true;
+    } else {
+        return false;
+    }
 }
+
+    
 
 
 Aluno* buscarAlunoPorNome(const char* nome) {
-    NoAluno* atual = a.raiz;
+    int atual = 0;
 
-    while (atual != NULL) {
-        int comparacao = strcmp(atual->aluno->nome, nome);
+    while (atual < a.capacidade && a.vetor[atual] != NULL) {
+
+        int comparacao = strcmp(a.vetor[atual]->nome, nome);
 
         if (comparacao == 0) {
-            return atual->aluno;
+            return a.vetor[atual];
         }
         else if (comparacao > 0) {
-            atual = atual->esq;
+            atual = 2 * atual + 1;
         }
         else {
-            atual = atual->dir;
+            atual = 2 * atual + 2;
         }
     }
 
@@ -155,10 +147,16 @@ void lerArquivoCSV(const char* nomeArquivo) {
         );
 
         if (campos == 7) {
-            adicionarAluno(novo);
-        }
-        else {
-            
+            if (!adicionarAluno(novo)) {
+                delete novo;
+
+                printf("Limite do vetor atingido!\n");
+                printf("Alunos inseridos: %d\n",
+                    a.quantidadeElementosDeAlunos);
+
+                break;
+            }
+        } else {
             delete novo;
         }
     }
@@ -186,69 +184,17 @@ void exibirAluno(Aluno* aluno, int numero) {
 }
 
 
-void exibirAlunos() {
-    printf("\n=== ALUNOS EM ORDEM ALFABETICA ===\n");
-
-    
-    NoAluno** pilha = new NoAluno*[a.quantidadeElementosDeAlunos];
-
-    int topo = 0;
-    int contador = 0;
-
-    NoAluno* atual = a.raiz;
-
-    while (atual != NULL || topo > 0) {
-
-       
-        while (atual != NULL) {
-            pilha[topo++] = atual;
-            atual = atual->esq;
-        }
-
-        
-        atual = pilha[--topo];
-
-        contador++;
-        exibirAluno(atual->aluno, contador);
-
-        
-        atual = atual->dir;
-    }
-
-    delete[] pilha;
-
-    printf("Total: %d alunos\n\n", contador);
-}
 
 
 void liberarArvore() {
-    if (a.raiz == NULL) {
-        return;
+    for (int i = 0; i < a.capacidade; i++) {
+        if (a.vetor[i] != NULL) {
+            delete a.vetor[i];
+        }
     }
 
-    NoAluno** pilha = new NoAluno*[a.quantidadeElementosDeAlunos];
-    int topo = 0;
-
-    pilha[topo++] = a.raiz;
-
-    while (topo > 0) {
-        NoAluno* atual = pilha[--topo];
-
-        if (atual->esq != NULL) {
-            pilha[topo++] = atual->esq;
-        }
-
-        if (atual->dir != NULL) {
-            pilha[topo++] = atual->dir;
-        }
-
-        delete atual->aluno;
-        delete atual;
-    }
-
-    delete[] pilha;
-
-    inicializa();
+    delete[] a.vetor;
+    a.vetor = NULL;
 }
 
 int main() {
@@ -276,7 +222,7 @@ int main() {
 
    
     int quantidadeNiveis =
-        a.raiz == NULL ? 0 : a.nivelMaximo + 1;
+    a.quantidadeElementosDeAlunos == 0 ? 0 : a.nivelMaximo + 1;
 
     printf("Quantidade de niveis: %d\n",
            quantidadeNiveis);
